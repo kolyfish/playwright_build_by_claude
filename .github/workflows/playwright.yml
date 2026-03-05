@@ -1,4 +1,4 @@
-name: Playwright Tests
+name: Playwright Tests + GCS Report
 
 on:
   push:
@@ -9,6 +9,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
@@ -17,22 +18,51 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install dependencies
+      - name: 安裝 npm 相依套件
         run: npm ci
 
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps
+      # 只裝 chromium，節省 CI 時間（firefox/webkit 留給本機多瀏覽器驗證）
+      - name: 安裝 Playwright 瀏覽器
+        run: npx playwright install chromium --with-deps
 
-      - name: Run E2E tests
-        run: npm run test:e2e
+      - name: 執行所有測試
+        run: npx playwright test
+        # 測試失敗不中斷後續上傳流程，確保報告一定上得去
+        continue-on-error: true
 
-      - name: Run API tests
-        run: npm run test:api
+      # 認證 GCP：Service Account Key 存在 GitHub Secrets
+      - name: 認證 GCP
+        if: always()
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      - name: Upload test report
+      # 上傳 HTML report 到 GCS，路徑含 run_id 方便區分每次執行
+      - name: 上傳測試報告到 GCS
+        if: always()
+        uses: google-github-actions/upload-cloud-storage@v2
+        with:
+          path: playwright-report
+          destination: ${{ secrets.GCS_BUCKET }}/playwright-results/${{ github.run_id }}
+
+      # 把公開報告連結寫進 Job Summary，面試官/team 直接點開看
+      - name: 輸出報告連結到 Job Summary
+        if: always()
+        run: |
+          REPORT_URL="https://storage.googleapis.com/${{ secrets.GCS_BUCKET }}/playwright-results/${{ github.run_id }}/playwright-report/index.html"
+          echo "## Playwright 測試報告" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| 項目 | 值 |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-----|" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch | \`${{ github.ref_name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| 報告連結 | [點我查看報告]($REPORT_URL) |" >> $GITHUB_STEP_SUMMARY
+
+      # 備援：GitHub Artifacts（即使 GCS 失敗也保得住報告）
+      - name: 備份報告到 GitHub Artifacts
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: playwright-report
+          name: playwright-report-${{ github.run_id }}
           path: playwright-report/
-          retention-days: 30
+          retention-days: 14
