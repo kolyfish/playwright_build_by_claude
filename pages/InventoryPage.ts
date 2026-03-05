@@ -8,7 +8,7 @@ export class InventoryPage extends BasePage {
 
   constructor(page: Page) {
     super(page);
-    this.sortContainer = page.locator('[data-test="product_sort_container"]');
+    this.sortContainer = page.locator('[data-test="product-sort-container"]');
     this.cartBadge = page.locator('.shopping_cart_badge');
     this.cartLink = page.locator('.shopping_cart_link');
   }
