@@ -10,6 +10,7 @@ A professional Playwright + TypeScript end-to-end and API automation testing pro
 
 - **[Playwright](https://playwright.dev/)** — Cross-browser automation framework
 - **TypeScript** — Type-safe test development
+- **Docker** — Containerized test execution environment
 - **Google Cloud Storage** — Remote test report hosting
 - **GitHub Actions** — CI/CD pipeline
 
@@ -103,11 +104,41 @@ Every push to `main` or `develop` triggers the GitHub Actions workflow:
 
 ### Viewing Test Reports
 
-After each CI run, the report URL appears in the GitHub Actions **Job Summary**:
+After each CI run, the report URL appears in the GitHub Actions **Job Summary**.
 
+**Latest Report →** [View Test Report](https://storage.googleapis.com/playwright-side-project-reports/playwright-results/22718028685/playwright-report/index.html)
+
+URL pattern:
 ```
 https://storage.googleapis.com/playwright-side-project-reports/playwright-results/{run_id}/playwright-report/index.html
 ```
+
+---
+
+## Docker
+
+Run tests in a fully isolated container — no local browser or Node setup required.
+
+```bash
+# Build image
+docker build -t playwright-demo .
+
+# Run tests locally (no GCS upload)
+docker run --rm playwright-demo
+
+# Run and upload report to GCS
+docker run --rm \
+  -e GCS_BUCKET=your-bucket-name \
+  -e GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json \
+  -v /path/to/sa.json:/tmp/sa.json \
+  playwright-demo
+```
+
+The `entrypoint.sh` handles:
+1. Run all Playwright tests
+2. Upload HTML report & artifacts to GCS (if `GCS_BUCKET` is set)
+3. Print public report URL
+4. Exit with the correct test exit code
 
 ---
 

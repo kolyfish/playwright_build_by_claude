@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>面試技術摘要 — Playwright + Docker + GCP</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', 'PingFang TC', 'Noto Sans TC', sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .header .badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 6px 16px;
+      border-radius: 20px;
+      margin-bottom: 16px;
+    }
+    .header h1 {
+      font-size: 32px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #a78bfa, #60a5fa, #34d399);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 12px;
+    }
+    .header p {
+      color: #94a3b8;
+      font-size: 15px;
+    }
+
+    /* Pipeline Banner */
+    .pipeline {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      margin-bottom: 48px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .pipeline-step {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #1e2433;
+      border: 1px solid #2d3748;
+      border-radius: 10px;
+      padding: 10px 18px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .pipeline-step .icon { font-size: 18px; }
+    .pipeline-arrow {
+      color: #4a5568;
+      font-size: 20px;
+      font-weight: 300;
+    }
+
+    /* Cards Grid */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+
+    .card {
+      background: #1a1f2e;
+      border: 1px solid #2d3748;
+      border-radius: 14px;
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-3px);
+      border-color: #4a5568;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      border-radius: 14px 14px 0 0;
+    }
+    .card.docker::before { background: linear-gradient(90deg, #2496ed, #0db7ef); }
+    .card.gcp::before    { background: linear-gradient(90deg, #4285f4, #34a853); }
+    .card.ci::before     { background: linear-gradient(90deg, #f6c90e, #ff6b35); }
+    .card.test::before   { background: linear-gradient(90deg, #a78bfa, #ec4899); }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .card-icon {
+      width: 42px; height: 42px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+    }
+    .docker .card-icon { background: rgba(36,150,237,0.15); }
+    .gcp    .card-icon { background: rgba(66,133,244,0.15); }
+    .ci     .card-icon { background: rgba(246,201,14,0.15); }
+    .test   .card-icon { background: rgba(167,139,250,0.15); }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #f1f5f9;
+    }
+    .card-subtitle {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+
+    .card ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .card ul li {
+      font-size: 13px;
+      color: #94a3b8;
+      padding-left: 16px;
+      position: relative;
+      line-height: 1.5;
+    }
+    .card ul li::before {
+      content: '▸';
+      position: absolute;
+      left: 0;
+      color: #4a5568;
+    }
+    .card ul li strong {
+      color: #cbd5e1;
+      font-weight: 600;
+    }
+
+    /* Highlight Quote */
+    .quote {
+      background: linear-gradient(135deg, rgba(167,139,250,0.1), rgba(96,165,250,0.1));
+      border: 1px solid rgba(167,139,250,0.3);
+      border-left: 4px solid #a78bfa;
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin-bottom: 32px;
+    }
+    .quote p {
+      font-size: 14px;
+      color: #c4b5fd;
+      line-height: 1.8;
+      font-style: italic;
+    }
+    .quote .label {
+      font-size: 11px;
+      color: #6b7280;
+      margin-bottom: 8px;
+      font-style: normal;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    /* QA Table */
+    .qa-section h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #f1f5f9;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .qa-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .qa-table th {
+      text-align: left;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #64748b;
+      padding: 10px 16px;
+      border-bottom: 1px solid #2d3748;
+    }
+    .qa-table td {
+      font-size: 13px;
+      padding: 12px 16px;
+      border-bottom: 1px solid #1e2433;
+      vertical-align: top;
+      line-height: 1.6;
+    }
+    .qa-table td:first-child {
+      color: #fbbf24;
+      font-weight: 500;
+      width: 35%;
+    }
+    .qa-table td:last-child {
+      color: #94a3b8;
+    }
+    .qa-table tr:last-child td { border-bottom: none; }
+    .qa-table tbody tr:hover td { background: #1a1f2e; }
+
+    /* Tech Tags */
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 24px;
+      justify-content: center;
+    }
+    .tag {
+      font-size: 12px;
+      font-weight: 500;
+      padding: 4px 12px;
+      border-radius: 6px;
+      border: 1px solid;
+    }
+    .tag.blue   { color: #60a5fa; border-color: rgba(96,165,250,0.3); background: rgba(96,165,250,0.08); }
+    .tag.green  { color: #34d399; border-color: rgba(52,211,153,0.3); background: rgba(52,211,153,0.08); }
+    .tag.purple { color: #a78bfa; border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+    .tag.yellow { color: #fbbf24; border-color: rgba(251,191,36,0.3); background: rgba(251,191,36,0.08); }
+    .tag.pink   { color: #f472b6; border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+
+    .footer {
+      text-align: center;
+      margin-top: 48px;
+      color: #374151;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- Header -->
+    <div class="header">
+      <div class="badge">Interview Technical Summary</div>
+      <h1>Playwright + Docker + GCP 自動化測試</h1>
+      <p>End-to-End 測試 ✦ 容器化部署 ✦ 雲端報告</p>
+    </div>
+
+    <!-- Pipeline -->
+    <div class="pipeline">
+      <div class="pipeline-step"><span class="icon">✍️</span> 本機寫測試</div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step"><span class="icon">🐳</span> Docker 封裝</div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step"><span class="icon">⚙️</span> GitHub Actions</div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step"><span class="icon">☁️</span> GCS 報告上雲</div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step"><span class="icon">🔗</span> 公開 URL 分享</div>
+    </div>
+
+    <!-- Cards -->
+    <div class="grid">
+
+      <div class="card docker">
+        <div class="card-header">
+          <div class="card-icon">🐳</div>
+          <div>
+            <div class="card-title">Docker</div>
+            <div class="card-subtitle">容器化測試環境</div>
+          </div>
+        </div>
+        <ul>
+          <li>Base image：<strong>mcr.microsoft.com/playwright</strong>，內建瀏覽器，環境一致</li>
+          <li>Container 內裝 <strong>google-cloud-cli</strong>，具備直接上傳 GCS 能力</li>
+          <li><strong>entrypoint.sh</strong> 處理：跑測試 → 上傳 → 回傳正確 exit code</li>
+          <li>任何 CI 或本機都能一鍵執行，消滅「我這裡可以跑」問題</li>
+        </ul>
+      </div>
+
+      <div class="card gcp">
+        <div class="card-header">
+          <div class="card-icon">☁️</div>
+          <div>
+            <div class="card-title">GCP — Cloud Storage</div>
+            <div class="card-subtitle">測試報告雲端託管</div>
+          </div>
+        </div>
+        <ul>
+          <li><strong>gsutil -m cp -r</strong> 並行上傳 HTML report 與 artifacts</li>
+          <li>用 <strong>timestamp</strong> 做版本隔離，每次 run 獨立路徑</li>
+          <li>報告 <strong>公開可讀</strong>，PM/QA 直接點 URL，不用進 CI</li>
+          <li>Service Account + Secrets，<strong>憑證不進 repo</strong></li>
+        </ul>
+      </div>
+
+      <div class="card ci">
+        <div class="card-header">
+          <div class="card-icon">⚙️</div>
+          <div>
+            <div class="card-title">GitHub Actions</div>
+            <div class="card-subtitle">CI/CD 全自動流程</div>
+          </div>
+        </div>
+        <ul>
+          <li>push 到 <strong>main / develop</strong> 自動觸發</li>
+          <li><strong>Job Summary</strong> 直接顯示報告 URL，一眼看結果</li>
+          <li>同時備份到 GitHub Artifacts（<strong>14 天保留</strong>）</li>
+          <li>Secrets 管理：<code>GCP_SA_KEY</code>、<code>GCS_BUCKET</code></li>
+        </ul>
+      </div>
+
+      <div class="card test">
+        <div class="card-header">
+          <div class="card-icon">🧪</div>
+          <div>
+            <div class="card-title">測試架構</div>
+            <div class="card-subtitle">Playwright + TypeScript + POM</div>
+          </div>
+        </div>
+        <ul>
+          <li><strong>Page Object Model</strong>：BasePage 封裝共用行為，LoginPage 繼承</li>
+          <li><strong>E2E + API 測試分離</strong>，API 不開 browser 省資源</li>
+          <li>失敗自動收集 <strong>截圖 + trace</strong>，debug 有跡可查</li>
+          <li>無 hard sleep，全用 <strong>wait_for_selector</strong> / <strong>wait_for_load_state</strong></li>
+        </ul>
+      </div>
+
+    </div>
+
+    <!-- Quote -->
+    <div class="quote">
+      <div class="label">面試時這樣說</div>
+      <p>「我用這個 side project 把整條 DevOps pipeline 跑通：本機寫測試 → Docker 封裝環境 → GitHub Actions 自動執行 → 報告上 GCS 讓所有人都能看到結果，不用進 Jenkins 或 CI 系統。」</p>
+    </div>
+
+    <!-- QA -->
+    <div class="qa-section">
+      <h2>💬 常見面試問答</h2>
+      <table class="qa-table">
+        <thead>
+          <tr>
+            <th>問題</th>
+            <th>你的答案</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>為什麼用 Docker？</td>
+            <td>環境一致性——Playwright 的瀏覽器版本在不同機器很難對齊，Docker 消滅這個問題</td>
+          </tr>
+          <tr>
+            <td>GCS 怎麼認證？</td>
+            <td>Service Account key 存在 GitHub Secrets，CI 時注入環境變數，不進 repo，符合最小權限原則</td>
+          </tr>
+          <tr>
+            <td>POM 的優點？</td>
+            <td>頁面邏輯集中管理，locator 改動只改一處，測試本體維持乾淨</td>
+          </tr>
+          <tr>
+            <td>怎麼處理 flaky test？</td>
+            <td>禁止 hard sleep，全用 wait_for_selector / wait_for_load_state，等事件不等時間</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Tags -->
+    <div class="tags">
+      <span class="tag blue">Playwright</span>
+      <span class="tag blue">TypeScript</span>
+      <span class="tag purple">Docker</span>
+      <span class="tag green">Google Cloud Storage</span>
+      <span class="tag yellow">GitHub Actions</span>
+      <span class="tag pink">Page Object Model</span>
+      <span class="tag blue">E2E Testing</span>
+      <span class="tag green">API Testing</span>
+      <span class="tag purple">CI/CD</span>
+    </div>
+
+    <div class="footer">Built with Claude Code · 2026</div>
+  </div>
+</body>
+</html>
