@@ -103,3 +103,4 @@ playwright-demo/
 | 2026-03-05 | 初始化專案，建立 Playwright TypeScript 基礎結構 |
 | 2026-03-05 | 加入 Docker + entrypoint.sh，支援 GCS 結果上傳 |
 | 2026-03-05 | 重構測試目標：從 playwright.dev 改為 SauceDemo + ReqRes.in；新增 10 個 test cases（TC-01 ~ TC-10）；建立完整 POM（InventoryPage、CartPage、CheckoutPage）；更新 GitHub Actions 加入 GCS 公開報告連結 |
+| 2026-03-05 | 完成 Cloud Run Job 部署：Build amd64 Docker image → Push 到 Artifact Registry → 建立並執行 playwright-job；排除 ARM64 平台不相容問題 |
