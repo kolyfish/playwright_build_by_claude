@@ -5,7 +5,7 @@
 | 項目 | 說明 |
 |------|------|
 | 目的 | 展示 QA 工程師能力的 Side Project：E2E + API 自動化測試 + CI/CD + GCP |
-| 測試對象 | SauceDemo（E2E UI）、ReqRes.in（API） |
+| 測試對象 | SauceDemo（E2E UI）、JSONPlaceholder（API） |
 | 技術棧 | Playwright + TypeScript + Docker + GitHub Actions + GCP (Cloud Run Job / GCS) |
 
 ---
@@ -25,7 +25,7 @@ playwright-demo/
 │   │   ├── login.spec.ts   # TC-01 ~ TC-03
 │   │   ├── cart.spec.ts    # TC-04 ~ TC-05
 │   │   └── checkout.spec.ts# TC-06 ~ TC-07
-│   └── api/                # API 測試（ReqRes.in）
+│   └── api/                # API 測試（JSONPlaceholder）
 │       └── reqres.spec.ts  # TC-08 ~ TC-10
 ├── .github/workflows/
 │   └── playwright.yml      # CI/CD：測試 → GCS 上傳 → Job Summary 連結
@@ -52,7 +52,7 @@ playwright-demo/
 ### 1. 為什麼選 SauceDemo + ReqRes.in？
 
 - **SauceDemo**：專為測試自動化設計，有刻意內建的 bug（`problem_user`、`locked_out_user`），讓測試情境更豐富，面試官一看就知道你懂行
-- **ReqRes.in**：乾淨的 REST API Mock，支援 GET/POST/PUT/DELETE，穩定不會掛，適合展示 API 測試能力
+- **JSONPlaceholder**：免費公開 REST API Mock，無需 API key，支援 GET/POST，穩定不會掛，適合展示 API 測試能力（原 reqres.in 於 2024 年底改為付費 API key 制，存取 403）
 
 ### 2. 為什麼用 Page Object Model？
 
@@ -104,3 +104,4 @@ playwright-demo/
 | 2026-03-05 | 加入 Docker + entrypoint.sh，支援 GCS 結果上傳 |
 | 2026-03-05 | 重構測試目標：從 playwright.dev 改為 SauceDemo + ReqRes.in；新增 10 個 test cases（TC-01 ~ TC-10）；建立完整 POM（InventoryPage、CartPage、CheckoutPage）；更新 GitHub Actions 加入 GCS 公開報告連結 |
 | 2026-03-05 | 完成 Cloud Run Job 部署：Build amd64 Docker image → Push 到 Artifact Registry → 建立並執行 playwright-job；排除 ARM64 平台不相容問題 |
+| 2026-03-05 | 將 API 測試目標從 reqres.in 換為 jsonplaceholder.typicode.com：reqres.in 改為付費 API key 制導致 CI 403 失敗 |
